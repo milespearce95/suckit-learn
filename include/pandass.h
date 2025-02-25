@@ -1,4 +1,4 @@
-// koalas.h
+// pandass.h
 
 #ifndef PANDASS_H
 #define PANDASS_H
@@ -47,6 +47,10 @@ public:
     void imputeColumn(size_t colIndex, const std::string method = "zero");
 
     void imputeColumns(const std::vector<std::string>& columnsToImpute, const std::string method = "zero");
+
+    void normalizeColumn(size_t colIndex);
+
+    void normalizeColumns(const std::vector<std::string>& columnsToNormalize);
 };
 
 #endif // PANDASS_H

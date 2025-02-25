@@ -351,7 +351,7 @@ void DataFrame::readCSV(const std::string& filePath) {
         while (row.size() < columnNames.size()) {
             row.push_back("NULL");
         }
-        
+
         /*
         // Debugging: Print the first few rows
         if (data.size() < 5) {
@@ -502,3 +502,84 @@ void DataFrame::imputeColumns(const std::vector<std::string>& columnsToImpute, c
         imputeColumn(colIndex, method);
     }
 }
+
+
+double stringToDouble(const std::string& str) {
+    std::istringstream ss(str);
+    double value;
+    ss >> value;
+    return ss.fail() ? NAN : value;  // Return NaN if conversion fails
+}
+
+void DataFrame::normalizeColumn(size_t colIndex) {
+    double mean = 0.0;
+    double stddev = 0.0;
+    size_t count = 0;
+
+    // Calculate mean of the column (skip "NULL" values)
+    for (const auto& row : data) {
+        if (row[colIndex] != "NULL") {
+            double value = stringToDouble(row[colIndex]);
+            if (!std::isnan(value)) {
+                mean += value;
+                count++;
+            }
+        }
+    }
+
+    if (count == 0) {
+        std::cerr << "No valid numeric data to calculate mean!" << std::endl;
+        return;
+    }
+
+    mean /= count;  // Calculate mean over valid values
+
+    // Calculate standard deviation (skip "NULL" values)
+    for (const auto& row : data) {
+        if (row[colIndex] != "NULL") {
+            double value = stringToDouble(row[colIndex]);
+            if (!std::isnan(value)) {
+                stddev += std::pow(value - mean, 2);
+            }
+        }
+    }
+
+    if (count > 1) {
+        stddev = std::sqrt(stddev / (count - 1));  // Use (count - 1) for sample standard deviation
+    } else {
+        stddev = 0;  // Avoid division by zero if there's only one valid value
+    }
+
+    // Normalize the column (use mean and standard deviation to normalize)
+    for (auto& row : data) {
+        if (row[colIndex] != "NULL") {
+            double value = stringToDouble(row[colIndex]);
+            if (!std::isnan(value) && stddev != 0) {
+                row[colIndex] = std::to_string((value - mean) / stddev);
+            } else if (std::isnan(value) || stddev == 0) {
+                row[colIndex] = "NULL";  // Retain "NULL" if normalization isn't possible
+            }
+        }
+    }
+}
+
+void DataFrame::normalizeColumns(const std::vector<std::string>& columnsToNormalize) {
+    for (const auto& column : columnsToNormalize) {
+        int colIndex = findColumnIndex(column);  // Find the index of the column to encode
+        if (colIndex == -1) {
+            std::cerr << "Column " << column << " not found!" << std::endl;
+            continue;
+        }
+        normalizeColumn(colIndex);
+    }
+}
+
+
+
+
+
+
+
+
+
+

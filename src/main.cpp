@@ -32,21 +32,16 @@ int main() {
     // df.head(12);
 
     // Drop the unwanted columns
+
     df.dropColumn("PassengerId");
     df.dropColumn("Name");
     df.dropColumn("SibSp");
     df.dropColumn("Ticket");
     df.dropColumn("Cabin");
 
-    // df.print();
-
-
     df.oneHotEncode({"Sex", "Embarked"});
-    // df.print();
-    
-    df.imputeColumns(df.columnNames, "mean");
-    // df.print();
 
+    df.imputeColumns(df.columnNames, "mean");
 
     // Split into training and testing data
     DataFrame df_train, df_test;
@@ -54,39 +49,41 @@ int main() {
     df.splitData(testProportion, df_train, df_test);
 
     // Process training data
+    df_train.normalizeColumns({"Fare"});
     std::vector<std::vector<double>> X_train;  // Features matrix
     std::vector<int> y_train;  // Target vector
     df_train.dropAndSeparate("Survived", X_train, y_train);
-    normalize(X_train);
-    
-    df_train.head();
-    // Initialize parameters (theta)
-    std::vector<double> theta(X_train[0].size(), 0.0);  // Initialize theta to zeros
+    //normalize(X_train);
 
+    LogisticRegression lr;
+
+    // Initialize parameters (theta)
+
+    //theta = std::vector<double> theta(X_train[0].size(), 0.0);  // Initialize theta to zeros
 
     // df_train.print();
     std::cout << "Gradient Descent Start" << std::endl;
-    double alpha = 0.01;  // Learning rate
-    int iterations = 1000;  // Number of iterations for gradient descent
+    double alpha = 0.001;  // Learning rate
+    int iterations = 10000;  // Number of iterations for gradient descent
 
     // Train logistic regression model using gradient descent
-    theta = gradientDescent(X_train, y_train, theta, alpha, iterations);
+    //theta = gradientDescent(X_train, y_train, theta, alpha, iterations);
+    lr.fit(X_train, y_train, alpha, iterations);
 
     // Test the model (use df_test to test the model)
+    df_test.normalizeColumns({"Fare"});
     std::vector<std::vector<double>> X_test;
     std::vector<int> y_test;
     df_test.dropAndSeparate("Survived", X_test, y_test);
-    normalize(X_test);
+    //normalize(X_test);
 
     // Make predictions on the test set
     std::vector<int> y_pred;
-    for (size_t i = 0; i < X_test.size(); ++i) {
-        double prediction = sigmoid(std::inner_product(X_test[i].begin(), X_test[i].end(), theta.begin(), 0.0));
-        y_pred.push_back(prediction >= 0.5 ? 1 : 0);  // Classify based on threshold 0.5
-    }
+    y_pred = lr.predict(X_test);
 
-    // Calculate the Gini index
+    double trainGini = calculateGini(y_train, lr.predict(X_train));
     double giniIndex = calculateGini(y_test, y_pred);
+    std::cout << trainGini << std::endl;
     std::cout << "Gini Index: " << giniIndex << std::endl;
 
     return 0;
